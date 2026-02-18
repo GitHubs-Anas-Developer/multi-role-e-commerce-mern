@@ -1,17 +1,38 @@
 "use client";
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import ChildCategoryHeader from "./ChildCategoryHeader";
-import { Button, Image, Popconfirm, Space, Table } from "antd";
+import { Button, Image, message, Popconfirm, Space, Switch, Table } from "antd";
 import { DeleteOutlined, EditOutlined } from "@ant-design/icons";
 import { useDispatch, useSelector } from "react-redux";
-import { fetchChildCategories } from "@/redux/slices/childcategory/childcategoryThunk";
+import {
+  deleteChildCategory,
+  fetchChildCategories,
+  getOneChildCategory,
+  updateChildCategory,
+} from "@/redux/slices/childcategory/childcategoryThunk";
+import EditChildCategoryForm from "./EditChildCategoryForm";
 
 function ChildCategoryList() {
-  const { childCategories, loading, error } = useSelector(
-    (state) => state.childCategory,
-  );
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const {
+    childCategories,
+    totalPages,
+    currentPage,
+    totalChildCategory,
+    loading,
+    error,
+  } = useSelector((state) => state.childCategory);
 
   const dispatch = useDispatch();
+
+  const handleDelete = async (childId) => {
+    try {
+      await dispatch(deleteChildCategory(childId)).unwrap();
+      message.success("Child category deleted successfully 🎉");
+    } catch (error) {
+      message.error(error?.message || "Child category delete failed ❌");
+    }
+  };
 
   useEffect(() => {
     dispatch(fetchChildCategories());
@@ -32,13 +53,13 @@ function ChildCategoryList() {
       title: "Sub Category",
       dataIndex: "subCategory",
       key: "subCategory",
-      render: (subCategory) => subCategory.name,
+      render: (subCategory) => subCategory?.name,
     },
     {
       title: "Parent Category",
       dataIndex: "parentCategory",
       key: "parentCategory",
-      render: (parentCategory) => parentCategory.name,
+      render: (parentCategory) => parentCategory?.name,
     },
 
     {
@@ -47,22 +68,26 @@ function ChildCategoryList() {
       key: "image",
       render: (image) => <Image width={40} src={image?.url} alt="" />,
     },
-
     {
       title: "Status",
       dataIndex: "isActive",
       key: "isActive",
-      render: (isActive) => (
-        <span
-          className={`px-3 py-1 text-xs font-semibold rounded-full shadow-sm
-            ${
-              isActive
-                ? "bg-green-100 text-green-700 border border-green-300"
-                : "bg-red-100 text-red-700 border border-red-300"
-            }`}
-        >
-          {isActive ? "Active" : "Inactive"}
-        </span>
+      align: "center",
+      render: (isActive, record) => (
+        <Switch
+          checked={isActive}
+          checkedChildren="Active"
+          unCheckedChildren="Inactive"
+          onChange={(checked) => {
+            // dispatch update status
+            dispatch(
+              updateChildCategory({
+                id: record._id,
+                data: { isActive: checked },
+              }),
+            );
+          }}
+        />
       ),
     },
 
@@ -72,13 +97,21 @@ function ChildCategoryList() {
       render: (_, record) => (
         <Space>
           {/* Edit Button */}
-          <Button type="primary" icon={<EditOutlined />}>
+          <Button
+            type="primary"
+            icon={<EditOutlined />}
+            onClick={() => {
+              setDrawerOpen(!drawerOpen);
+              dispatch(getOneChildCategory(record._id));
+            }}
+          >
             Edit
           </Button>
           <Popconfirm
             title="Are you sure to delete?"
             okText="Yes"
             cancelText="No"
+            onConfirm={() => handleDelete(record._id)}
           >
             <Button danger icon={<DeleteOutlined />}>
               Delete
@@ -90,15 +123,29 @@ function ChildCategoryList() {
   ];
 
   return (
-    <div>
-      <ChildCategoryHeader />
+    <div
+      style={{
+        height: "100vh",
+        overflowY: "auto",
+      }}
+    >
+      <ChildCategoryHeader
+        currentPage={currentPage}
+        pageSize={totalPages}
+        totalCategory={totalChildCategory}
+        onPageChange={(p) => dispatch(fetchChildCategories(p))}
+      />
       <Table
         rowKey="_id"
         loading={loading}
         columns={columns}
-        dataSource={childCategories}
+        dataSource={Array.isArray(childCategories) ? childCategories : []}
         bordered
         pagination={false}
+      />
+      <EditChildCategoryForm
+        drawerOpen={drawerOpen}
+        setDrawerOpen={setDrawerOpen}
       />
     </div>
   );

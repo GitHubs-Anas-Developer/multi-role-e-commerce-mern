@@ -1,6 +1,6 @@
 "use client";
-import React, { useEffect, useState } from "react";
-import { Button, Image, message, Popconfirm, Space, Table } from "antd";
+import React, { useState } from "react";
+import { Button, Image, message, Popconfirm, Space, Switch, Table } from "antd";
 import { DeleteOutlined, EditOutlined } from "@ant-design/icons";
 import SubCategoryHeader from "./SubCategoryHeader";
 import { useDispatch, useSelector } from "react-redux";
@@ -8,6 +8,7 @@ import {
   deleteSubCategory,
   fetchSubcategories,
   getOneSubCategory,
+  updateSubCategory,
 } from "@/redux/slices/subcategory/subcategoryThunk";
 import EditSubCategoryForm from "./EditSubCategoryForm";
 
@@ -15,11 +16,15 @@ function SubCategoryList() {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const dispatch = useDispatch();
 
-  const { subcategories, loading, error } = useSelector(
-    (state) => state.subCategory,
-  );
+  const {
+    subcategories,
+    currentPage,
+    pageSize,
+    totalSubCategory,
+    loading,
+    error,
+  } = useSelector((state) => state.subCategory);
 
-  console.log(" Subcategories from Redux:", subcategories);
   const handleDelete = async (id) => {
     try {
       await dispatch(deleteSubCategory(id)).unwrap();
@@ -29,10 +34,6 @@ function SubCategoryList() {
       message.error(err || "Delete failed");
     }
   };
-
-  useEffect(() => {
-    dispatch(fetchSubcategories());
-  }, [dispatch]);
 
   const columns = [
     {
@@ -56,23 +57,39 @@ function SubCategoryList() {
       title: "Image",
       dataIndex: "image",
       key: "image",
-      render: (img) => (img ? <Image width={50} src={img.url} alt="" /> : "No Image"),
+      render: (img) =>
+        img ? (
+          <Image
+            width={42}
+            height={42}
+            src={img.url}
+            alt="subcategory"
+            className="rounded-lg border border-gray-200 bg-white p-1"
+          />
+        ) : (
+          "No Image"
+        ),
     },
     {
       title: "Status",
       dataIndex: "isActive",
       key: "isActive",
-      render: (isActive) => (
-        <span
-          className={`px-3 py-1 text-xs font-semibold rounded-full shadow-sm
-            ${
-              isActive
-                ? "bg-green-100 text-green-700 border border-green-300"
-                : "bg-red-100 text-red-700 border border-red-300"
-            }`}
-        >
-          {isActive ? "Active" : "Inactive"}
-        </span>
+      align: "center",
+      render: (isActive, record) => (
+        <Switch
+          checked={isActive}
+          checkedChildren="Active"
+          unCheckedChildren="Inactive"
+          onChange={(checked) => {
+            // dispatch update status
+            dispatch(
+              updateSubCategory({
+                id: record._id,
+                data: { isActive: checked },
+              }),
+            );
+          }}
+        />
       ),
     },
     {
@@ -108,8 +125,18 @@ function SubCategoryList() {
     },
   ];
   return (
-    <>
-      <SubCategoryHeader />
+    <div
+      style={{
+        height: "100vh",
+        overflowY: "auto",
+      }}
+    >
+      <SubCategoryHeader
+        currentPage={currentPage}
+        pageSize={pageSize}
+        totalSubCategory={totalSubCategory}
+        onPageChange={(p) => dispatch(fetchSubcategories(p))}
+      />
       <Table
         columns={columns}
         dataSource={Array.isArray(subcategories) ? subcategories : []}
@@ -122,7 +149,7 @@ function SubCategoryList() {
         drawerOpen={drawerOpen}
         setDrawerOpen={setDrawerOpen}
       />
-    </>
+    </div>
   );
 }
 

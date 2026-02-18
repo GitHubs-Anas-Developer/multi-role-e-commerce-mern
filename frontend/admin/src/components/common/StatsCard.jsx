@@ -6,25 +6,25 @@ import { MdBlock, MdOutlineStarPurple500 } from "react-icons/md";
 
 const { Title, Text } = Typography;
 
-function StatsCard() {
+function StatsCard({ title, totalCount, activeCount, inactiveCount }) {
   const statsData = [
     {
-      title: "Total Categories",
-      value: 12,
+      title: `Total ${title}`,
+      value: totalCount,
       icon: <BiCategoryAlt size={26} />,
       bg: "#000",
       color: "#000",
     },
     {
       title: "Active",
-      value: 20,
+      value: activeCount,
       icon: <VscVmActive size={26} />,
       bg: "#52c41a",
       color: "#52c41a",
     },
     {
       title: "Inactive",
-      value: 10,
+      value: inactiveCount,
       icon: <MdBlock size={26} />,
       bg: "#1677ff",
       color: "#1677ff",
@@ -39,10 +39,7 @@ function StatsCard() {
   ];
 
   return (
-    <Row
-      gutter={[16, 16]}
-      style={{ width: "100%"}}
-    >
+    <Row gutter={[16, 16]} style={{ width: "100%" }}>
       {statsData.map((item, index) => (
         <Col key={index} xs={24} sm={12} md={12} lg={6}>
           <Card hoverable>

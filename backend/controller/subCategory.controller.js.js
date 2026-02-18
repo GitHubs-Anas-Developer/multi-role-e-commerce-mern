@@ -1,5 +1,6 @@
 import cloudinary from "../config/cloudinary.config.js";
 import SubCategory from "../models/subCategory.model.js";
+import categoryModel from "../models/category.models.js";
 
 export const createSubCategory = async (req, res) => {
   try {
@@ -26,8 +27,6 @@ export const createSubCategory = async (req, res) => {
       );
       stream.end(req.file.buffer);
     });
-
-    console.log("Cloudinary URL:", result.secure_url);
 
     // Create sub-category
     const subCategory = await SubCategory.create({
@@ -57,12 +56,28 @@ export const createSubCategory = async (req, res) => {
 
 export const fetchSubcategories = async (req, res) => {
   try {
+    const page = req.query.page || 1;
+    const limit = req.query.limit || 10;
+
+    const skip = (page - 1) * limit;
+
     const subCategories = await SubCategory.find()
+      .skip(skip)
+      .limit(limit)
       .sort({
         createdAt: -1,
       })
-      .populate("parentCategory", "name")
+      .populate("parentCategory", "name");
 
+    const totalSubCategory = await SubCategory.countDocuments();
+
+    const activeSubCategoryCount = await SubCategory.countDocuments({
+      isActive: true,
+    });
+
+    const inactiveSubCategoryCount = await SubCategory.countDocuments({
+      isActive: false,
+    });
 
     if (subCategories.length === 0) {
       return res.status(404).json({
@@ -70,10 +85,18 @@ export const fetchSubcategories = async (req, res) => {
         message: "Subcategories not found",
       });
     }
+
     res.status(200).json({
       success: true,
       message: "Categories fetched successfully",
-      subCategories,
+      data: {
+        page,
+        subCategories,
+        totalPages: Math.ceil(totalSubCategory / limit),
+        totalSubCategory,
+        activeSubCategoryCount,
+        inactiveSubCategoryCount,
+      },
     });
   } catch (error) {
     res.status(500).json({
@@ -93,8 +116,13 @@ export const getOneSubCategory = async (req, res) => {
         message: "subCategory ID is required",
       });
     }
+    const subcategory =
+      await SubCategory.findById(subCategoryId).populate("parentCategory");
 
-    const subcategory = await SubCategory.findById(subCategoryId);
+    const otherCategories = await categoryModel
+      .find({ _id: { $ne: subcategory.parentCategory._id } })
+      .select("name");
+
     if (!subcategory) {
       return res.status(404).json({
         success: false,
@@ -105,7 +133,7 @@ export const getOneSubCategory = async (req, res) => {
     res.status(200).json({
       success: true,
       message: "SubCategory fetched successfully",
-      subcategory,
+      data: { subcategory, otherCategories },
     });
   } catch (error) {
     res.status(500).json({
@@ -117,11 +145,8 @@ export const getOneSubCategory = async (req, res) => {
 };
 
 export const updateSubCategory = async (req, res) => {
-  const subCategoryId = req.params.id;
-
   try {
-    const { parentCategory, SubCategoryName, description } = req.body;
-
+    const subCategoryId = req.params.id;
     if (!subCategoryId) {
       return res.status(400).json({
         success: false,
@@ -129,10 +154,13 @@ export const updateSubCategory = async (req, res) => {
       });
     }
 
+    const { parentCategory, SubCategoryName, description, isActive } = req.body;
+
     const updateData = {};
     if (SubCategoryName) updateData.name = SubCategoryName;
     if (description) updateData.description = description;
     if (parentCategory) updateData.parentCategory = parentCategory;
+    if (typeof isActive === "boolean") updateData.isActive = isActive;
 
     // 🔹 If image is provided
     if (req.file) {
@@ -150,12 +178,11 @@ export const updateSubCategory = async (req, res) => {
         url: uploadResult.secure_url,
       };
     }
-
-    const updatedCategory = await SubCategory.findByIdAndUpdate(
+    const updateSubCategory = await SubCategory.findByIdAndUpdate(
       subCategoryId,
       updateData,
       { new: true },
-    );
+    ).populate("parentCategory");
 
     if (!updateSubCategory) {
       return res.status(404).json({
@@ -167,7 +194,7 @@ export const updateSubCategory = async (req, res) => {
     res.status(200).json({
       success: true,
       message: "subCategory updated successfully",
-      updatedCategory,
+      updateSubCategory,
     });
   } catch (error) {
     res.status(500).json({
@@ -242,6 +269,64 @@ export const fetchSubCategoriesByCategory = async (req, res) => {
     return res.status(200).json({
       success: true,
       subCategories,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: "Server not found",
+      error: error.message,
+    });
+  }
+};
+export const searchSubCategory = async (req, res) => {
+  try {
+    const { keyword } = req.query;
+
+    const query = { name: { $regex: keyword, $options: "i" } };
+
+    const subcategories = await SubCategory.find(query)
+      .populate("parentCategory")
+      .sort({
+        createdAt: -1,
+      })
+      .lean();
+
+    res.status(200).json({
+      success: true,
+      subcategories,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: "Server not found",
+      error: error.message,
+    });
+  }
+};
+
+export const filterSubcategoryStatus = async (req, res) => {
+  try {
+    const { status } = req.query;
+    let statusValue;
+
+    if (status === "active") statusValue = true;
+    if (status === "inactive") statusValue = false;
+
+    const statusSubcategories = await SubCategory.find({
+      isActive: statusValue,
+    }).populate("parentCategory");
+
+    if (statusSubcategories.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "sub-category not found",
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: "Sub-categories fetched successfully",
+      statusSubcategories,
     });
   } catch (error) {
     res.status(500).json({

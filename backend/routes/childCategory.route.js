@@ -1,11 +1,19 @@
 import express from "express";
 import upload from "../middleware/multer.js";
 import { verifyAdmin } from "../middleware/auth.middleware.js";
-import { createChildCategory, fetchChildCategories } from "../controller/childCategory.controller.js";
+import { createChildCategory, deleteChildCategory, fetchChildCategories, filterStatus, getOneChildCategory, searchChildCategory, updateChildCategory } from "../controller/childCategory.controller.js";
 
 const router = express.Router();
 
 router.post("/create", verifyAdmin, upload.single("image"), createChildCategory);
-router.get("/all", verifyAdmin, fetchChildCategories);
+router.get("/", verifyAdmin, fetchChildCategories);
+router.get("/one/:id", verifyAdmin, getOneChildCategory);
+router.put("/update/:id", verifyAdmin,upload.single("image"), updateChildCategory);
+router.delete("/delete/:id", verifyAdmin, deleteChildCategory);
+router.get("/search", verifyAdmin, searchChildCategory);
+router.get("/filter/status", verifyAdmin, filterStatus);
+
+
+
 
 export default router;

@@ -10,27 +10,27 @@ export const createCategory = createAsyncThunk(
       return response.data.category;
     } catch (error) {
       return rejectWithValue(
-        error.response?.data?.message || error.message || "category failed"
+        error.response?.data?.message || error.message || "category failed",
       );
     }
-  }
+  },
 );
 
 // Fetch all categories
 export const fetchCategories = createAsyncThunk(
   "admin/categories/fetch",
-  async (_, { rejectWithValue }) => {
+  async (page = 1, { rejectWithValue }) => {
     try {
-      const response = await api.get("/category/all");
-      return response.data?.categories;
+      const response = await api.get(`/category/?page=${page}&limit=10`);
+      return response.data?.data;
     } catch (error) {
       return rejectWithValue(
         error.response?.data?.message ||
           error.message ||
-          "Fetch categories failed"
+          "Fetch categories failed",
       );
     }
-  }
+  },
 );
 
 // get one category
@@ -43,10 +43,10 @@ export const getOneCategory = createAsyncThunk(
       return response.data?.category;
     } catch (error) {
       return rejectWithValue(
-        error.response?.data?.message || error.message || "Get category failed"
+        error.response?.data?.message || error.message || "Get category failed",
       );
     }
-  }
+  },
 );
 
 // Delete category
@@ -61,10 +61,10 @@ export const deleteCategory = createAsyncThunk(
       return rejectWithValue(
         error.response?.data?.message ||
           error.message ||
-          "Delete category failed"
+          "Delete category failed",
       );
     }
-  }
+  },
 );
 
 // Update category
@@ -73,13 +73,48 @@ export const updateCategory = createAsyncThunk(
   async ({ id, data }, { rejectWithValue }) => {
     try {
       const response = await api.put(`/category/update/${id}`, data);
-      return response.data;
+      return response.data.updatedCategory;
     } catch (error) {
       return rejectWithValue(
         error.response?.data?.message ||
           error.message ||
-          "Update category failed"
+          "Update category failed",
       );
     }
-  }
+  },
+);
+
+// search category
+export const searchCategory = createAsyncThunk(
+  "admin/category/search",
+  async (keyword, { rejectWithValue }) => {
+    try {
+      const response = await api.get(`/category/search?keyword=${keyword}`);
+      return response.data?.categories;
+    } catch (error) {
+      return rejectWithValue(
+        error.response?.data?.message ||
+          error.message ||
+          "search category failed",
+      );
+    }
+  },
+);
+
+export const filterStatusCategory = createAsyncThunk(
+  "admin/category/status",
+  async (status, { rejectWithValue }) => {
+    try {
+      const response = await api.get(
+        `/category/filter/status?status=${status}`,
+      );
+      return response.data?.statusCategories;
+    } catch (error) {
+      return rejectWithValue(
+        error.response?.data?.message ||
+          error.message ||
+          "status category failed",
+      );
+    }
+  },
 );

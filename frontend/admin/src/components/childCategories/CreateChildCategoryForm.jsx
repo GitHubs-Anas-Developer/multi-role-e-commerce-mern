@@ -60,14 +60,16 @@ function CreateChildCategoryForm({
     dispatch(fetchCategories());
   }, [dispatch]);
   return (
-    <>
+    <> 
       <Modal
         title="Create New Child-Category"
         open={childCategoryFormModel}
         onOk={() => form.submit()}
         onCancel={handleCancel}
         okText="Create"
+       
       >
+
         <Form layout="vertical" form={form} onFinish={handleOk}>
           <Form.Item
             label="Child-Category Name"

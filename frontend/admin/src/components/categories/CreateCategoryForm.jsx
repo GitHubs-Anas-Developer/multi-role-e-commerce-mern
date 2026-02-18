@@ -6,7 +6,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { createCategory } from "@/redux/slices/category/categoryThunks";
 
 function CreateCategoryForm({ categoryFormModel, setCategoryFormModel }) {
-  const { pending, error } = useSelector((state) => state.category);
+  const { loading, error } = useSelector((state) => state.category);
   const [form] = Form.useForm();
   const dispatch = useDispatch();
 
@@ -29,7 +29,7 @@ function CreateCategoryForm({ categoryFormModel, setCategoryFormModel }) {
   };
   useEffect(() => {
     //  SUCCESS TOAST
-    if (!pending && !error && categoryFormModel) {
+    if (!loading && !error && categoryFormModel) {
       message.success("Category created successfully ");
       form.resetFields();
       setCategoryFormModel(false);
@@ -39,7 +39,7 @@ function CreateCategoryForm({ categoryFormModel, setCategoryFormModel }) {
     if (error) {
       message.error(error);
     }
-  }, [pending, error]);
+  }, [loading, error]);
 
   return (
     <Modal
@@ -48,7 +48,7 @@ function CreateCategoryForm({ categoryFormModel, setCategoryFormModel }) {
       onOk={() => form.submit()}
       onCancel={handleCancel}
       okText="Create"
-      confirmLoading={pending}
+      confirmLoading={loading}
     >
       <Form layout="vertical" form={form} onFinish={handleOk}>
         <Form.Item

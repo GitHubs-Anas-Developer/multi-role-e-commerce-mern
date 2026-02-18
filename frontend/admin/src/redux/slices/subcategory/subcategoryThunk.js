@@ -10,19 +10,19 @@ export const createSubcategory = createAsyncThunk(
     } catch (error) {
       return rejectWithValue(err.response?.data || err.message);
     }
-  }
+  },
 );
 
 export const fetchSubcategories = createAsyncThunk(
   "admin/subcategory/all",
-  async (_, { rejectWithValue }) => {
+  async (page = 1, { rejectWithValue }) => {
     try {
-      const response = await api.get("/sub-category/all");
-      return response.data?.subCategories;
+      const response = await api.get(`/sub-category/?page=${page}&limit=10`);
+      return response.data?.data;
     } catch (error) {
       return rejectWithValue(err.response?.data || err.message);
     }
-  }
+  },
 );
 
 export const getOneSubCategory = createAsyncThunk(
@@ -30,11 +30,11 @@ export const getOneSubCategory = createAsyncThunk(
   async (subCategoryId, { rejectWithValue }) => {
     try {
       const response = await api.get(`/sub-category/one/${subCategoryId}`);
-      return response.data?.subcategory;
+      return response.data?.data;
     } catch (error) {
       return rejectWithValue(err.response?.data || err.message);
     }
-  }
+  },
 );
 
 export const updateSubCategory = createAsyncThunk(
@@ -42,11 +42,11 @@ export const updateSubCategory = createAsyncThunk(
   async ({ id, data }, { rejectWithValue }) => {
     try {
       const response = await api.put(`/sub-category/update/${id}`, data);
-      return response.data;
+      return response.data.updateSubCategory;
     } catch (error) {
       return rejectWithValue(err.response?.data || err.message);
     }
-  }
+  },
 );
 
 export const deleteSubCategory = createAsyncThunk(
@@ -54,13 +54,13 @@ export const deleteSubCategory = createAsyncThunk(
   async (subCategoryId, { rejectWithValue }) => {
     try {
       const response = await api.delete(
-        `/sub-category/delete/${subCategoryId}`
+        `/sub-category/delete/${subCategoryId}`,
       );
       return response.data;
     } catch (error) {
       return rejectWithValue(err.response?.data || err.message);
     }
-  }
+  },
 );
 
 export const fetchSubCategoriesByCategory = createAsyncThunk(
@@ -72,5 +72,40 @@ export const fetchSubCategoriesByCategory = createAsyncThunk(
     } catch (err) {
       return rejectWithValue(err.response?.data || err.message);
     }
-  }
+  },
+);
+
+// search Sub-category
+export const searchSubCategory = createAsyncThunk(
+  "admin/category/search",
+  async (keyword, { rejectWithValue }) => {
+    try {
+      const response = await api.get(`sub-category/search?keyword=${keyword}`);
+      return response.data?.subcategories;
+    } catch (error) {
+      return rejectWithValue(
+        error.response?.data?.message ||
+          error.message ||
+          "search subcategory failed",
+      );
+    }
+  },
+);
+
+export const filterStatusSubCategory = createAsyncThunk(
+  "admin/subcategory/status",
+  async (status, { rejectWithValue }) => {
+    try {
+      const response = await api.get(
+        `/sub-category/filter/status?status=${status}`,
+      );
+      return response.data?.statusSubcategories;
+    } catch (error) {
+      rejectWithValue(
+        error.response?.data?.message ||
+          error.message ||
+          "status subcategory failed",
+      );
+    }
+  },
 );

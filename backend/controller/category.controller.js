@@ -52,7 +52,16 @@ export const createCategory = async (req, res) => {
 // Get all categories
 export const getAllCategories = async (req, res) => {
   try {
-    const categories = await categoryModel.find().sort({ createdAt: -1 });
+    const page = req.query.page || 1;
+    const limit = req.query.limit || 1;
+    const skip = (page - 1) * limit;
+
+    const categories = await categoryModel
+      .find()
+      .skip(skip)
+      .limit(limit)
+      .sort({ createdAt: -1 });
+
     if (categories.length === 0) {
       return res.status(404).json({
         success: false,
@@ -60,11 +69,27 @@ export const getAllCategories = async (req, res) => {
       });
     }
 
-    const categoryLength  =
+    const totalCategory = await categoryModel.countDocuments();
+
+    const activeCategoryCount = await categoryModel.countDocuments({
+      isActive: true,
+    });
+
+    const inactiveCategoryCount = await categoryModel.countDocuments({
+      isActive: false,
+    });
+
     res.status(200).json({
       success: true,
       message: "Categories fetched successfully",
-      categories,
+      data: {
+        page,
+        totalPages: Math.ceil(totalCategory / limit),
+        categories,
+        totalCategory,
+        activeCategoryCount,
+        inactiveCategoryCount,
+      },
     });
   } catch (error) {
     res.status(500).json({
@@ -88,11 +113,11 @@ export const updateCategory = async (req, res) => {
       });
     }
 
-    const { name, description } = req.body;
-
+    const { name, description, isActive } = req.body;
     const updateData = {};
     if (name) updateData.name = name;
     if (description) updateData.description = description;
+    if (typeof isActive === "boolean") updateData.isActive = isActive;
 
     // 🔹 If image is provided
     if (req.file) {
@@ -114,7 +139,7 @@ export const updateCategory = async (req, res) => {
     const updatedCategory = await categoryModel.findByIdAndUpdate(
       categoryId,
       updateData,
-      { new: true }
+      { new: true },
     );
 
     if (!updatedCategory) {
@@ -127,7 +152,7 @@ export const updateCategory = async (req, res) => {
     res.status(200).json({
       success: true,
       message: "Category updated successfully",
-      category: updatedCategory,
+      updatedCategory,
     });
   } catch (error) {
     res.status(500).json({
@@ -201,7 +226,56 @@ export const getOneCategory = async (req, res) => {
       category,
     });
   } catch (error) {
-    return status(500).json({
+    return res.status(500).json({
+      success: false,
+      message: "Server error",
+      error: error.message,
+    });
+  }
+};
+export const searchCategory = async (req, res) => {
+  try {
+    const { keyword } = req.query;
+
+    const query = { name: { $regex: keyword, $options: "i" } };
+
+    const categories = await categoryModel.find(query).sort({
+      createdAt: -1,
+    });
+
+    res.status(200).json({
+      success: true,
+      categories,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: "Server error",
+      error: error.message,
+    });
+  }
+};
+
+export const filterStatus = async (req, res) => {
+  try {
+    const { status } = req.query;
+    let statusValue;
+
+    if (status === "active") statusValue = true;
+    if (status === "inactive") statusValue = false;
+
+    const query = { isActive: statusValue };
+
+    const statusCategories = await categoryModel.find(query).sort({
+      createdAt: -1,
+    });
+
+    res.status(200).json({
+      success: true,
+      statusCategories,
+    });
+  } catch (error) {
+    return res.status(500).json({
       success: false,
       message: "Server error",
       error: error.message,

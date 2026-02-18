@@ -14,9 +14,14 @@ import React, { useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 
 function EditSubCategoryForm({ drawerOpen, setDrawerOpen }) {
-  const { subcategory, loading, error } = useSelector(
-    (state) => state.subCategory
+  const { subcategory, otherCategories, loading, error } = useSelector(
+    (state) => state.subCategory,
   );
+
+  const selectCategoryOptions = otherCategories.map((cate, index) => ({
+    label: cate?.name,
+    value: cate._id,
+  }));
 
   const dispatch = useDispatch();
   const [form] = Form.useForm();
@@ -48,7 +53,7 @@ function EditSubCategoryForm({ drawerOpen, setDrawerOpen }) {
       form.setFieldsValue({
         SubCategoryName: subcategory.name,
         description: subcategory.description,
-        parentCategory: subcategory.parentCategory,
+        parentCategory: subcategory.parentCategory._id,
         image: subcategory.image
           ? [
               {
@@ -70,6 +75,7 @@ function EditSubCategoryForm({ drawerOpen, setDrawerOpen }) {
         onClose={handleClose}
         open={drawerOpen}
         width={500}
+        confirmLoading={loading}
         extra={
           <Space>
             <Button onClick={handleClose}>Cancel</Button>
@@ -106,7 +112,7 @@ function EditSubCategoryForm({ drawerOpen, setDrawerOpen }) {
           >
             <Select
               placeholder="Select a category"
-              options={"categoryOptions"}
+              options={selectCategoryOptions}
               loading={loading}
             ></Select>
           </Form.Item>

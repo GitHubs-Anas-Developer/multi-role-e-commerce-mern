@@ -1,15 +1,30 @@
 "use client";
 import { Button, Flex, Pagination, Space } from "antd";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import CreateCategoryForm from "./CreateCategoryForm";
-import SearchBar from "../common/SearchBar";
-import Status from "../common/Status";
 import StatsCard from "../common/StatsCard";
 import { IoIosAddCircleOutline } from "react-icons/io";
 import Filter from "../common/Filter";
-function CategoryHeader() {
+import { useDispatch, useSelector } from "react-redux";
+import { fetchCategories } from "@/redux/slices/category/categoryThunks";
+function CategoryHeader({
+  currentPage,
+  pageSize,
+  totalCategory,
+  onPageChange,
+  activeCategoryCount,
+  inactiveCategoryCount,
+  loading,
+}) {
+
+  console.log("activeCategoryCount",activeCategoryCount)
   const [categoryFormModel, setCategoryFormModel] = useState(false);
 
+  const dispatch = useDispatch();
+
+  useEffect(() => {
+    dispatch(fetchCategories());
+  }, [dispatch]);
   return (
     <>
       <div
@@ -37,14 +52,26 @@ function CategoryHeader() {
         />
       </div>
       <Flex>
-        <StatsCard />
+        <StatsCard
+          title="Categories"
+          loading={loading}
+          totalCount={totalCategory}
+          activeCount={activeCategoryCount}
+          inactiveCount={inactiveCategoryCount}
+        />
       </Flex>
       <Flex
         justify="space-evenly"
         align="center"
         style={{ width: "100%", padding: "20px" }}
       >
-        <Filter />
+        <Filter
+          title="categories"
+          currentPage={currentPage}
+          pageSize={pageSize}
+          totalCategory={totalCategory}
+          onPageChange={onPageChange}
+        />
       </Flex>
     </>
   );

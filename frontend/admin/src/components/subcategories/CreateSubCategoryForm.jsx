@@ -13,7 +13,7 @@ function CreateSubCategoryForm({
 }) {
   const { categories } = useSelector((state) => state.category);
   const { subcategories, loading, error } = useSelector(
-    (state) => state.subCategory
+    (state) => state.subCategory,
   );
 
   const dispatch = useDispatch();

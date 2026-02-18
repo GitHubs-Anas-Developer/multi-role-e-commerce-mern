@@ -4,14 +4,21 @@ import {
   deleteSubCategory,
   fetchSubcategories,
   fetchSubCategoriesByCategory,
+  filterStatusSubCategory,
   getOneSubCategory,
+  searchSubCategory,
   updateSubCategory,
 } from "./subcategoryThunk";
-import { updateCategory } from "../category/categoryThunks";
 
 const initialState = {
   subcategory: null,
   subcategories: [],
+  otherCategories: [],
+  currentPage: 1,
+  totalPages: 1,
+  totalSubCategory: 0,
+  activeSubCategoryCount: 0,
+  inactiveSubCategoryCount: 0,
   loading: false,
   loadingList: false,
   error: null,
@@ -20,8 +27,6 @@ const initialState = {
 const subcategorySlice = createSlice({
   initialState,
   name: "subcategory",
-  reducers: {},
-
   extraReducers: (builder) => {
     builder
       // create sub-category
@@ -43,9 +48,15 @@ const subcategorySlice = createSlice({
       })
       .addCase(fetchSubcategories.fulfilled, (state, action) => {
         state.loadingList = false;
-        state.subcategories = action.payload;
+        state.subcategories = action.payload.subCategories;
+        state.totalSubCategory = action.payload.totalSubCategory;
+        state.activeSubCategoryCount = action.payload.activeSubCategoryCount;
+        state.inactiveSubCategoryCount =
+          action.payload.inactiveSubCategoryCount;
+        state.totalPages = action.payload.totalPages;
+        state.currentPage = action.payload.page;
       })
-      .addCase(fetchSubcategories.rejected, (state,action) => {
+      .addCase(fetchSubcategories.rejected, (state, action) => {
         state.loadingList = false;
         state.error = action.payload;
       })
@@ -56,30 +67,40 @@ const subcategorySlice = createSlice({
       })
       .addCase(getOneSubCategory.fulfilled, (state, action) => {
         state.loading = false;
-        state.subcategory = action.payload;
+        state.subcategory = action.payload.subcategory;
+        state.otherCategories = action.payload.otherCategories;
       })
       .addCase(getOneSubCategory.rejected, (state) => {
         state.loading = false;
         state.error = action.payload;
       })
 
-      // sub-category update
-      .addCase(updateSubCategory.pending, (state) => {
-        state.loading = true;
-      })
       .addCase(updateSubCategory.fulfilled, (state, action) => {
         state.loading = false;
+
         const index = state.subcategories.findIndex(
-          (item) => item._id === action.payload._id
+          (item) => item._id === action.payload._id,
         );
-        console.log("index", index);
+
         if (index !== -1) {
+          // Get old status BEFORE update
+          const oldStatus = state.subcategories[index].isActive;
+          const newStatus = action.payload.isActive;
+
+          //  Update item
           state.subcategories[index] = action.payload;
+
+          //  Update counts properly
+          if (oldStatus !== newStatus) {
+            if (newStatus) {
+              state.activeSubCategoryCount += 1;
+              state.inactiveSubCategoryCount -= 1;
+            } else {
+              state.activeSubCategoryCount -= 1;
+              state.inactiveSubCategoryCount += 1;
+            }
+          }
         }
-      })
-      .addCase(updateSubCategory.rejected, (state, action) => {
-        state.loading = false;
-        state.error = action.payload;
       })
 
       //delete Sub-category
@@ -89,7 +110,7 @@ const subcategorySlice = createSlice({
       .addCase(deleteSubCategory.fulfilled, (state, action) => {
         state.loading = false;
         state.subcategories = state.subcategories.filter(
-          (item) => item._id !== action.payload._id
+          (item) => item._id !== action.payload._id,
         );
       })
       .addCase(deleteSubCategory.rejected, (state, action) => {
@@ -98,7 +119,6 @@ const subcategorySlice = createSlice({
       })
 
       // fetchSubCategoriesByCategory
-    
       .addCase(fetchSubCategoriesByCategory.pending, (state) => {
         state.loading = true;
       })
@@ -108,6 +128,32 @@ const subcategorySlice = createSlice({
       })
       .addCase(fetchSubCategoriesByCategory.rejected, (state) => {
         state.loading = false;
+      })
+
+      // search categories
+      .addCase(searchSubCategory.pending, (state) => {
+        state.loading = true;
+      })
+      .addCase(searchSubCategory.fulfilled, (state, action) => {
+        state.loading = false;
+        state.subcategories = action.payload;
+      })
+      .addCase(searchSubCategory.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload.error;
+      })
+
+      // FILTER STATUS
+      .addCase(filterStatusSubCategory.pending, (state) => {
+        state.loading = true;
+      })
+      .addCase(filterStatusSubCategory.fulfilled, (state, action) => {
+        state.loading = false;
+        state.subcategories = action.payload;
+      })
+      .addCase(filterStatusSubCategory.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
       });
   },
 });

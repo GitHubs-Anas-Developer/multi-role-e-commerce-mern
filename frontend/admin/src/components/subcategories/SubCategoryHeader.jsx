@@ -1,12 +1,33 @@
 "use client";
 import { Button, Flex, Space } from "antd";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import CreateSubCategoryForm from "./CreateSubCategoryForm";
 import Filter from "../common/Filter";
 import StatsCard from "../common/StatsCard";
+import { fetchSubcategories } from "@/redux/slices/subcategory/subcategoryThunk";
+import { useDispatch, useSelector } from "react-redux";
+import { IoIosAddCircleOutline } from "react-icons/io";
 
-function SubCategoryHeader() {
+function SubCategoryHeader({
+  currentPage,
+  pageSize,
+  totalSubCategory,
+  onPageChange,
+}) {
   const [subCategoryFormModel, setSubCategoryFormModel] = useState(false);
+
+  const {
+    subcategories,
+    activeSubCategoryCount,
+    inactiveSubCategoryCount,
+    loading,
+  } = useSelector((state) => state.subCategory);
+
+  const dispatch = useDispatch();
+
+  useEffect(() => {
+    dispatch(fetchSubcategories());
+  }, [dispatch]);
 
   return (
     <div style={{ width: "100%" }}>
@@ -26,20 +47,32 @@ function SubCategoryHeader() {
             type="primary"
             onClick={() => setSubCategoryFormModel(!subCategoryFormModel)}
           >
-            Create New Sub-Category
+            <IoIosAddCircleOutline size={25} /> Create New Sub-Category
           </Button>
         </Space>
       </div>
 
       <Flex>
-        <StatsCard />
+        <StatsCard
+          title="Sub Categories"
+          loading={loading}
+          totalCount={totalSubCategory}
+          activeCount={activeSubCategoryCount}
+          inactiveCount={inactiveSubCategoryCount}
+        />
       </Flex>
       <Flex
         justify="space-evenly"
         align="center"
         style={{ width: "100%", padding: "20px" }}
       >
-        <Filter />
+        <Filter
+          title="sub-Categories"
+          currentPage={currentPage}
+          pageSize={pageSize}
+          totalCategory={totalSubCategory}
+          onPageChange={onPageChange}
+        />
       </Flex>
 
       {/* Modal Form */}

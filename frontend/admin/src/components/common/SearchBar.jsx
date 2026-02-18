@@ -4,7 +4,9 @@ import { Space, Input } from "antd";
 function SearchBar() {
   const { Search } = Input;
 
-  const onSearch = (value, _e, info) => console.log(info?.source, value);
+  const onSearch = (value) => {
+    console.log("value",value)
+  };
 
   return (
     <>
@@ -14,7 +16,6 @@ function SearchBar() {
           onSearch={onSearch}
           enterButton
         />
-     
       </Space>
     </>
   );
