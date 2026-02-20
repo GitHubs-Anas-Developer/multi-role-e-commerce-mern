@@ -42,7 +42,7 @@ function StatsCard({ title, totalCount, activeCount, inactiveCount }) {
     <Row gutter={[16, 16]} style={{ width: "100%" }}>
       {statsData.map((item, index) => (
         <Col key={index} xs={24} sm={12} md={12} lg={6}>
-          <Card hoverable>
+          <Card>
             <div
               style={{
                 display: "flex",
