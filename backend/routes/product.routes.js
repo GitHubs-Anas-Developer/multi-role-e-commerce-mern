@@ -1,9 +1,10 @@
 import express from "express";
 import upload from "../middleware/multer.js";
 import { verifyAdmin } from "../middleware/auth.middleware.js";
-import { createProduct } from "../controller/product.controller.js";
+import { createProduct ,getAllProducts} from "../controller/product.controller.js";
 const router = express.Router();
 
 router.post("/create", verifyAdmin, upload.array("images", 10), createProduct);
+router.post("/", verifyAdmin, getAllProducts);
 
 export default router;
