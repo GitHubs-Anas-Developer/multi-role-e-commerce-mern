@@ -128,7 +128,7 @@ const productSchema = new mongoose.Schema(
 
     // SPECIFICATIONS (Dynamic key-value)
     specifications: {
-      type: map,
+      type: Map,
       of: String,
     },
 
@@ -157,10 +157,10 @@ const productSchema = new mongoose.Schema(
     //   default: "draft",
     // },
 
-    isFeatured: {
-      type: Boolean,
-      default: false,
-    },
+    // isFeatured: {
+    //   type: Boolean,
+    //   default: false,
+    // },
 
     // REVIEWS
     reviews: [reviewSchema],

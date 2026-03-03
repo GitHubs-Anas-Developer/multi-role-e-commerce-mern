@@ -63,14 +63,17 @@ function ProductsList() {
       dataIndex: "isActive",
       key: "isActive",
       render: (status) =>
-        status ? <Tag color="blue">Active</Tag> : <Tag color="red">Inactive</Tag>,
+        status ? (
+          <Tag color="blue">Active</Tag>
+        ) : (
+          <Tag color="red">Inactive</Tag>
+        ),
     },
     {
       title: "Featured",
       dataIndex: "isFeatured",
       key: "isFeatured",
-      render: (featured) =>
-        featured ? <Tag color="gold">Featured</Tag> : "-",
+      render: (featured) => (featured ? <Tag color="gold">Featured</Tag> : "-"),
     },
     {
       title: "Actions",
@@ -138,12 +141,7 @@ function ProductsList() {
   return (
     <>
       <ProductsHeader />
-      <Table
-        columns={columns}
-        dataSource={data}
-        bordered
-        pagination={false}
-      />
+      <Table columns={columns} dataSource={data} bordered pagination={false} />
     </>
   );
 }
