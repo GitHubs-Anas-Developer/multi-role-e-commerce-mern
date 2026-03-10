@@ -1,10 +1,21 @@
 "use client";
-import React from "react";
+import React, { useEffect } from "react";
 import { Table, Tag, Space, Button, Image } from "antd";
 import ProductsHeader from "./ProductsHeader";
 import { EditOutlined, DeleteOutlined } from "@ant-design/icons";
+import { useDispatch, useSelector } from "react-redux";
+import { getProductsAll } from "@/redux/slices/product/productThunks";
+import ProductSkeleton from "../ui/ProductSkeleton";
 
 function ProductsList() {
+  const dispatch = useDispatch();
+
+  const { products, loading, error } = useSelector((state) => state.product);
+
+  useEffect(() => {
+    dispatch(getProductsAll());
+  }, []);
+
   const columns = [
     {
       title: "ID",
@@ -69,12 +80,7 @@ function ProductsList() {
           <Tag color="red">Inactive</Tag>
         ),
     },
-    {
-      title: "Featured",
-      dataIndex: "isFeatured",
-      key: "isFeatured",
-      render: (featured) => (featured ? <Tag color="gold">Featured</Tag> : "-"),
-    },
+   
     {
       title: "Actions",
       key: "actions",
@@ -87,61 +93,17 @@ function ProductsList() {
     },
   ];
 
-  const data = [
-    {
-      key: "1",
-      _id: "1",
-      name: "iPhone 15 Pro",
-      image: "https://via.placeholder.com/60",
-      category: "Mobiles",
-      price: 120000,
-      stock: 25,
-      rating: 4.8,
-      isActive: true,
-      isFeatured: true,
-    },
-    {
-      key: "2",
-      _id: "2",
-      name: "Samsung Galaxy S24",
-      image: "https://via.placeholder.com/60",
-      category: "Mobiles",
-      price: 90000,
-      stock: 5,
-      rating: 4.5,
-      isActive: false,
-      isFeatured: false,
-    },
-    {
-      key: "3",
-      _id: "3",
-      name: "Nike Air Max",
-      image: "https://via.placeholder.com/60",
-      category: "Shoes",
-      price: 15000,
-      stock: 40,
-      rating: 4.3,
-      isActive: true,
-      isFeatured: false,
-    },
-    {
-      key: "4",
-      _id: "4",
-      name: "Sony Headphones",
-      image: "https://via.placeholder.com/60",
-      category: "Electronics",
-      price: 30000,
-      stock: 8,
-      rating: 4.9,
-      isActive: true,
-      isFeatured: true,
-    },
-  ];
+  if (loading) return <ProductSkeleton />;
 
   return (
     <>
       <ProductsHeader />
-      <Table columns={columns} dataSource={data} bordered pagination={false} />
+      <Table
+        columns={columns}
+        dataSource={products}
+        bordered
+        pagination={false}
+      />
     </>
   );
 }
