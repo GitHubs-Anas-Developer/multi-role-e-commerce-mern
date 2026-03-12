@@ -1,10 +1,10 @@
 "use client";
 import { Button, Flex, Space } from "antd";
-import React from "react";
+import React, { useState } from "react";
 import { IoIosAddCircleOutline } from "react-icons/io";
 import StatsCard from "../common/StatsCard";
 import Filter from "../common/Filter";
-
+import Link from "next/link";
 function ProductsHeader() {
   return (
     <>
@@ -18,9 +18,9 @@ function ProductsHeader() {
       >
         <h3 className="font-bold text-2xl">Products</h3>
         <Space>
-          <Button type="primary">
+          <Link href="products/create-product">
             <IoIosAddCircleOutline size={25} /> Create New Product
-          </Button>
+          </Link>
         </Space>
       </div>
 
