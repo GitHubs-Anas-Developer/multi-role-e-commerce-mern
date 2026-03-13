@@ -6,6 +6,9 @@ import StatsCard from "../common/StatsCard";
 import Filter from "../common/Filter";
 import Link from "next/link";
 function ProductsHeader() {
+
+  
+  
   return (
     <>
       <div
