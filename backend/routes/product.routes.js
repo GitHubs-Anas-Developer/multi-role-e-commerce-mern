@@ -5,7 +5,7 @@ import { createProduct ,deleteProduct,getAllProducts} from "../controller/produc
 const router = express.Router();
 
 router.post("/create", verifyAdmin, upload.array("images", 10), createProduct);
-router.post("/", verifyAdmin, getAllProducts);
+router.get("/", verifyAdmin, getAllProducts);
 router.delete("/delete/:id", verifyAdmin, deleteProduct);
 
 
