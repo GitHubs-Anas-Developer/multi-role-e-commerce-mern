@@ -1,148 +1,188 @@
+import cloudinary from "../config/cloudinary.config.js";
 import Product from "../models/product.model.js";
 import slugify from "slugify";
-
-// Utility: Generate Unique Slug
-const generateUniqueSlug = async (name) => {
-  let slug = slugify(name, { lower: true, strict: true });
-  let existing = await Product.findOne({ slug });
-
-  if (!existing) return slug;
-
-  let counter = 1;
-  while (existing) {
-    slug = `${slugify(name, { lower: true, strict: true })}-${counter}`;
-    existing = await Product.findOne({ slug });
-    counter++;
-  }
-
-  return slug;
-};
-
 export const createProduct = async (req, res) => {
   try {
+    const files = req.files || {};
+
+    const thumbnailFile = files.thumbnail?.[0] || null;
+    const imageFiles = files.images || [];
+
+    const tags = req.body.tags ? JSON.parse(req.body.tags) : [];
+    const highlights = req.body.highlights
+      ? JSON.parse(req.body.highlights)
+      : [];
+    const specifications = req.body.specifications
+      ? JSON.parse(req.body.specifications)
+      : [];
+    const variants = req.body.variants ? JSON.parse(req.body.variants) : [];
+    const shipping = req.body.shipping ? JSON.parse(req.body.shipping) : {};
+
     const {
       name,
-      description,
+      slug,
+      sku,
       brand,
+      description,
       category,
       subCategory,
       childCategory,
       mrp,
+      discount,
       price,
-      tax = 0,
+      finalPrice,
+      tax,
       stock,
-      variants = [],
-      specifications = {},
-      weight,
-      dimensions,
-      shippingCost = 0,
-      freeShipping = false,
-      sku,
+      warranty,
+      returnPolicy,
+      metaTitle,
+      metaDescription,
     } = req.body;
 
-    // Required Validation
-    if (
-      !name ||
-      !description ||
-      !category ||
-      !subCategory ||
-      !childCategory ||
-      !mrp ||
-      !price
-    ) {
+    if (!name) {
       return res.status(400).json({
         success: false,
-        message: "Required fields are missing",
+        message: "Product name is required",
       });
     }
 
-    // Price Validation
-    if (price > mrp) {
+    if (!sku) {
       return res.status(400).json({
         success: false,
-        message: "Selling price cannot be greater than MRP",
+        message: "SKU is required",
       });
     }
 
-    // Unique SKU Check
-    if (sku) {
-      const existingSKU = await Product.findOne({ sku });
-      if (existingSKU) {
-        return res.status(400).json({
-          success: false,
-          message: "SKU already exists",
-        });
-      }
+    if (!brand) {
+      return res.status(400).json({
+        success: false,
+        message: "Brand is required",
+      });
     }
 
-    // Generate Unique Slug
-    const slug = await generateUniqueSlug(name);
-
-    // Auto Discount Calculation
-    const discountPercentage =
-      mrp > price ? Math.round(((mrp - price) / mrp) * 100) : 0;
-
-    // Auto Stock from Variants (if variants exist)
-    let totalStock = stock || 0;
-    if (variants.length > 0) {
-      totalStock = variants.reduce(
-        (acc, variant) => acc + (variant.stock || 0),
-        0,
-      );
+    if (!description) {
+      return res.status(400).json({
+        success: false,
+        message: "Description is required",
+      });
     }
 
-    // Image Handling (if using multer)
-    const images = req.files?.images?.map((file) => file.path) || [];
-    const thumbnail = req.files?.thumbnail?.[0]?.path || "";
+    if (!category || !subCategory || !childCategory) {
+      return res.status(400).json({
+        success: false,
+        message: "Category, subCategory and childCategory are required",
+      });
+    }
 
-    const product = await Product.create({
+    if (mrp === undefined || discount === undefined || stock === undefined) {
+      return res.status(400).json({
+        success: false,
+        message: "MRP, discount and stock are required",
+      });
+    }
+
+    if (!thumbnailFile) {
+      return res.status(400).json({
+        success: false,
+        message: "Thumbnail is required",
+      });
+    }
+
+    const generatedSlug = slug || slugify(name, { lower: true, strict: true });
+
+    const existingProduct = await Product.findOne({
+      $or: [{ sku }, { slug: generatedSlug }],
+    });
+
+    if (existingProduct) {
+      return res.status(400).json({
+        success: false,
+        message: "Product with same SKU or slug already exists",
+      });
+    }
+
+    // upload thumbnail
+    const thumbnailUploadResult = await new Promise((resolve, reject) => {
+      cloudinary.uploader
+        .upload_stream({ folder: "thumbnail-product" }, (error, result) => {
+          if (error) return reject(error);
+          resolve(result);
+        })
+        .end(thumbnailFile.buffer);
+    });
+
+    // upload multiple product images
+    const imageUrls = await Promise.all(
+      imageFiles.map(
+        (file) =>
+          new Promise((resolve, reject) => {
+            cloudinary.uploader
+              .upload_stream({ folder: "product-images" }, (error, result) => {
+                if (error) return reject(error);
+                resolve(result.secure_url);
+              })
+              .end(file.buffer);
+          }),
+      ),
+    );
+
+    const product = new Product({
       name,
-      slug,
-      description,
+      slug: generatedSlug,
+      sku,
       brand,
+      tags,
+      description,
       category,
       subCategory,
       childCategory,
-      mrp,
-      price,
-      discountPercentage,
-      tax,
-      stock: totalStock,
-      variants,
+      mrp: Number(mrp),
+      discount: Number(discount),
+      price: Number(price || 0),
+      finalPrice: Number(finalPrice || 0),
+      tax: Number(tax || 0),
+      stock: Number(stock),
+      highlights,
       specifications,
-      weight,
-      dimensions,
-      shippingCost,
-      freeShipping,
-      images,
-      thumbnail,
-      sku,
+      variants,
+      thumbnail: thumbnailUploadResult.secure_url,
+      images: imageUrls,
+      shipping,
+      warranty,
+      returnPolicy,
+      metaTitle,
+      metaDescription,
     });
 
-    res.status(201).json({
+    await product.save();
+
+    return res.status(201).json({
       success: true,
       message: "Product created successfully",
       product,
     });
   } catch (error) {
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       message: "Server error",
       error: error.message,
     });
   }
 };
+
 export const getAllProducts = async (req, res) => {
   try {
-    const page = Number(req.query.page) || 1;
-    const limit = Number(req.query.limit) || 10;
+    const page = req.query.page || 1;
+    const limit = req.query.limit || 10;
     const skip = (page - 1) * limit;
 
     const products = await Product.find()
       .skip(skip)
       .limit(limit)
-      .sort({ createdAt: -1 });
-
+      .sort({ createdAt: -1 })
+      .populate("category", "name")
+      .populate("subCategory", "name")
+      .populate("childCategory", "name");
     const totalProducts = await Product.countDocuments();
 
     if (products.length === 0) {
@@ -151,19 +191,18 @@ export const getAllProducts = async (req, res) => {
         message: "No products found",
       });
     }
-
     res.status(200).json({
       success: true,
       message: "Products fetched successfully",
       data: {
-        page,
-        totalPages: Math.ceil(totalProducts / limit),
-        totalProducts,
         products,
+        totalProducts,
+        totalPages: Math.ceil(totalProducts / limit),
+        currentPage: page,
       },
     });
   } catch (error) {
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       message: "Server error",
       error: error.message,
@@ -173,10 +212,7 @@ export const getAllProducts = async (req, res) => {
 
 export const deleteProduct = async (req, res) => {
   try {
-    const productId = req.params.id
-
-    console.log("productId",productId)
-
+    const productId = req.params.id;
     if (!productId)
       return res.status(400).json({
         success: false,
