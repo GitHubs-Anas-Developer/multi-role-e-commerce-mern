@@ -16,3 +16,17 @@ export const getProductsAll = createAsyncThunk(
     }
   },
 );
+
+export const createProduct = createAsyncThunk(
+  "/admin/create/product",
+  async (data, { rejectWithValue }) => {
+    console.log("new products", data);
+    try {
+      const response = await api.post("/product/create", data);
+      return response.data;
+    } catch (error) {
+      rejectWithValue(error.response?.data?.message || error.message);
+    }
+  },
+);
+

@@ -1,5 +1,5 @@
 import { createSlice } from "@reduxjs/toolkit";
-import { getProductsAll } from "./productThunks";
+import { createProduct, getProductsAll } from "./productThunks";
 
 const initialState = {
   currentPage: 1,
@@ -32,6 +32,20 @@ const productSlice = createSlice({
       .addCase(getProductsAll.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload || action.error?.message || "Fetch products failed";
+      })
+
+      // create product
+      .addCase(createProduct.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(createProduct.fulfilled, (state, action) => {
+        state.loading = false;
+        state.products.unshift(action.payload);
+      })
+      .addCase(createProduct.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
       });
   },
 });
