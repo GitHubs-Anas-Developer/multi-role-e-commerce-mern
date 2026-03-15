@@ -1,70 +1,44 @@
 import mongoose from "mongoose";
 
-const variantSchema = new mongoose.Schema(
+const specificationSchema = new mongoose.Schema(
   {
-    name: {
-      type: String,
-    },
-    value: {
-      type: String,
-    },
-    price: {
-      type: Number,
-    },
-    stock: {
-      type: Number,
-    },
-    image: {
-      type: String,
-    },
+    name: { type: String, required: true },
+    value: { type: String, required: true },
   },
-  {
-    _id: false,
-  },
+  { _id: false },
 );
 
-const reviewSchema = new mongoose.Schema(
+const variantSchema = new mongoose.Schema(
   {
-    user: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "User",
-      required: true,
-    },
-    comment: {
-      type: String,
-    },
-    rating: {
-      type: Number,
-      required: true,
-      min: 1,
-      max: 5,
-    },
+    name: { type: String, required: true },
+    value: { type: String, required: true },
+    price: { type: Number, default: 0 },
+    stock: { type: Number, default: 0 },
   },
-  { timestamps: true },
+  { _id: false },
+);
+
+const shippingSchema = new mongoose.Schema(
+  {
+    weight: { type: Number, default: 0 },
+    shippingCost: { type: Number, default: 0 },
+    length: { type: Number, default: 0 },
+    width: { type: Number, default: 0 },
+    height: { type: Number, default: 0 },
+    freeShipping: { type: Boolean, default: false },
+  },
+  { _id: false },
 );
 
 const productSchema = new mongoose.Schema(
   {
-    //    BASIC INFO
-    name: {
-      type: String,
-      trim: true,
-      required: true,
-    },
-    slug: {
-      type: String,
-      required: true,
-      trim: true,
-    },
-    description: {
-      type: String,
-      required: true,
-    },
-    brand: {
-      type: String,
-    },
+    name: { type: String, required: true, trim: true },
+    slug: { type: String, required: true, unique: true, trim: true },
+    sku: { type: String, required: true, unique: true, trim: true },
+    brand: { type: String, required: true, trim: true },
+    tags: [{ type: String }],
+    description: { type: String, required: true },
 
-    // CATEGORY
     category: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Category",
@@ -81,105 +55,31 @@ const productSchema = new mongoose.Schema(
       required: true,
     },
 
-    // PRICING
-    mrp: {
-      type: Number,
-      required: true,
-    },
-    price: {
-      type: Number,
-      required: true,
-    },
-    discountPercentage: {
-      type: Number,
-      default: 0,
-      required: true,
-    },
-    tax: {
-      type: Number,
-      default: 0,
-      required: true,
-    },
-    // gst: {
-    //   type: Number,
-    //   required: true,
-    // },
-    stock: {
-      type: Number,
-      required: true,
-    },
-    lowStockThreshold: {
-      type: Number,
-      default: 5,
-    },
+    mrp: { type: Number, required: true },
+    discount: { type: Number, required: true, default: 0 },
+    price: { type: Number, default: 0 },
+    finalPrice: { type: Number, default: 0 },
+    tax: { type: Number, default: 0 },
+    stock: { type: Number, required: true },
 
-    // IMAGES
-    images: [
-      {
-        type: String,
-      },
-    ],
-    thumbnail: {
-      type: String,
-    },
-
-    // VARIANTS
+    highlights: [{ type: String }],
+    specifications: [specificationSchema],
     variants: [variantSchema],
 
-    // SPECIFICATIONS (Dynamic key-value)
-    specifications: {
-      type: Map,
-      of: String,
-    },
+    thumbnail: { type: String, required: true },
+    images: [{ type: String }],
 
-    // SHIPPING
-    weight: {
-      type: Number,
-    },
-    dimensions: {
-      length: Number,
-      width: Number,
-      height: Number,
-    },
-    shippingCost: {
-      type: Number,
-      default: 0,
-    },
-    freeShipping: {
-      type: Boolean,
-      default: false,
-    },
+    shipping: { type: shippingSchema, default: {} },
 
-    // // STATUS
-    // status: {
-    //   type: String,
-    //   enum: ["draft", "published", "unpublished"],
-    //   default: "draft",
-    // },
+    warranty: { type: String, default: "" },
+    returnPolicy: { type: String, default: "" },
 
-    // isFeatured: {
-    //   type: Boolean,
-    //   default: false,
-    // },
-
-    // REVIEWS
-    reviews: [reviewSchema],
-    rating: {
-      type: Number,
-      default: 0,
-    },
-    numReviews: {
-      type: Number,
-      default: 0,
-    },
-
-    // OTHER
-    sku: {
-      type: String,
-      unique: true,
-    },
+    metaTitle: { type: String, default: "" },
+    metaDescription: { type: String, default: "" },
   },
   { timestamps: true },
 );
 
-export default mongoose.model("Product", productSchema);
+const Product = mongoose.model("Product", productSchema);
+
+export default Product;
