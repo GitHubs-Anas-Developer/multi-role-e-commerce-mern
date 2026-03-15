@@ -1,110 +1,114 @@
 "use client";
-import React, { useEffect } from "react";
-import { Table, Tag, Space, Button, Image } from "antd";
-import ProductsHeader from "./ProductsHeader";
-import { EditOutlined, DeleteOutlined } from "@ant-design/icons";
+import React, { useEffect, useState } from "react";
+import {
+  Table,
+  Tag,
+  Space,
+  Button,
+  Image,
+  Card,
+} from "antd";
+import {
+  EditOutlined,
+  DeleteOutlined,
+  EyeOutlined,
+} from "@ant-design/icons";
 import { useDispatch, useSelector } from "react-redux";
 import { getProductsAll } from "@/redux/slices/product/productThunks";
 import ProductSkeleton from "../ui/ProductSkeleton";
+import ProductFilter from "./ProductFilter";
 
 function ProductsList() {
   const dispatch = useDispatch();
-
-  const { products, loading, error } = useSelector((state) => state.product);
+  const { products, loading } = useSelector((state) => state.product);
 
   useEffect(() => {
     dispatch(getProductsAll());
-  }, []);
-
+  }, [dispatch]);
   const columns = [
-    {
-      title: "ID",
-      dataIndex: "_id",
-      key: "_id",
-      width: 80,
-    },
     {
       title: "Product",
       dataIndex: "name",
       key: "name",
-    },
-    {
-      title: "Image",
-      dataIndex: "image",
-      key: "image",
-      render: (image) => (
-        <Image
-          src={image}
-          alt="product"
-          width={50}
-          height={50}
-          style={{ objectFit: "cover", borderRadius: 6 }}
-        />
+      render: (name, record) => (
+        <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+          <Image
+            src={record.thumbnail || "/no-image.png"}
+            alt={name}
+            width={45}
+            height={45}
+            preview={false}
+            style={{ objectFit: "cover", borderRadius: 6 }}
+          />
+          <div>
+            <div style={{ fontWeight: 600 }}>{name}</div>
+            <div style={{ fontSize: "12px", color: "#888" }}>
+              {record.sku || "No SKU"}
+            </div>
+          </div>
+        </div>
       ),
     },
     {
       title: "Category",
-      dataIndex: "category",
+      dataIndex: ["category", "name"],
       key: "category",
+      render: (category) => category || "Uncategorized",
     },
     {
       title: "Price",
       dataIndex: "price",
       key: "price",
-      render: (price) => `₹ ${price}`,
+      render: (price) => `₹${price ? price.toLocaleString() : 0}`,
     },
     {
       title: "Stock",
       dataIndex: "stock",
       key: "stock",
-      render: (stock) =>
-        stock > 10 ? (
-          <Tag color="green">In Stock ({stock})</Tag>
-        ) : (
-          <Tag color="red">Low Stock ({stock})</Tag>
-        ),
-    },
-    {
-      title: "Rating",
-      dataIndex: "rating",
-      key: "rating",
+      render: (stock) => {
+        if (stock === 0) return <Tag color="red">Out of Stock</Tag>;
+        if (stock <= 10) return <Tag color="orange">Low Stock ({stock})</Tag>;
+        return <Tag color="green">In Stock ({stock})</Tag>;
+      },
     },
     {
       title: "Status",
       dataIndex: "isActive",
       key: "isActive",
-      render: (status) =>
-        status ? (
-          <Tag color="blue">Active</Tag>
-        ) : (
-          <Tag color="red">Inactive</Tag>
-        ),
+      render: (status) => (
+        <Tag color={status ? "green" : "default"}>
+          {status ? "Active" : "Inactive"}
+        </Tag>
+      ),
     },
-   
     {
       title: "Actions",
       key: "actions",
-      render: () => (
+      render: (_, record) => (
         <Space>
-          <Button type="primary" icon={<EditOutlined />} />
-          <Button danger icon={<DeleteOutlined />} />
+          <Button size="small" icon={<EyeOutlined />} />
+          <Button size="small" icon={<EditOutlined />} />
+          <Button danger size="small" icon={<DeleteOutlined />} />
         </Space>
       ),
     },
   ];
 
-  if (loading) return <ProductSkeleton />;
+  if (loading) {
+    return (
+      <div className="p-6">
+        <ProductSkeleton />
+      </div>
+    );
+  }
 
   return (
-    <>
-      <ProductsHeader />
-      <Table
-        columns={columns}
-        dataSource={products}
-        bordered
-        pagination={false}
-      />
-    </>
+    <div style={{ minHeight: "100vh" }}>
+      <ProductFilter/>
+      <Card style={{ marginTop: 20, borderRadius: 12 }}>
+        <Table columns={columns} dataSource={products} rowKey="_id" />
+      </Card>
+    </div>
   );
 }
 
