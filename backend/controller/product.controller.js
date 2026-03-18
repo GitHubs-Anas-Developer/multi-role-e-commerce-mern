@@ -1,29 +1,16 @@
+import { json } from "express";
 import cloudinary from "../config/cloudinary.config.js";
 import Product from "../models/product.model.js";
 import slugify from "slugify";
 export const createProduct = async (req, res) => {
   try {
-    const files = req.files || {};
-
-    const thumbnailFile = files.thumbnail?.[0] || null;
-    const imageFiles = files.images || [];
-
-    const tags = req.body.tags ? JSON.parse(req.body.tags) : [];
-    const highlights = req.body.highlights
-      ? JSON.parse(req.body.highlights)
-      : [];
-    const specifications = req.body.specifications
-      ? JSON.parse(req.body.specifications)
-      : [];
-    const variants = req.body.variants ? JSON.parse(req.body.variants) : [];
-    const shipping = req.body.shipping ? JSON.parse(req.body.shipping) : {};
-
     const {
       name,
       slug,
       sku,
       brand,
       description,
+      status,
       category,
       subCategory,
       childCategory,
@@ -37,129 +24,142 @@ export const createProduct = async (req, res) => {
       returnPolicy,
       metaTitle,
       metaDescription,
+      variants, // ADD THIS
     } = req.body;
 
-    if (!name) {
+    // Validation (fixed category return)
+    if (!name || !slug || !sku || !brand || !description) {
       return res.status(400).json({
         success: false,
-        message: "Product name is required",
-      });
-    }
-
-    if (!sku) {
-      return res.status(400).json({
-        success: false,
-        message: "SKU is required",
-      });
-    }
-
-    if (!brand) {
-      return res.status(400).json({
-        success: false,
-        message: "Brand is required",
-      });
-    }
-
-    if (!description) {
-      return res.status(400).json({
-        success: false,
-        message: "Description is required",
+        message: "Required fields missing",
       });
     }
 
     if (!category || !subCategory || !childCategory) {
       return res.status(400).json({
+        // ADD res.status()
         success: false,
-        message: "Category, subCategory and childCategory are required",
+        message: "All category fields required",
       });
     }
 
-    if (mrp === undefined || discount === undefined || stock === undefined) {
-      return res.status(400).json({
-        success: false,
-        message: "MRP, discount and stock are required",
-      });
-    }
+    // Parse arrays/objects
+    const tags = req.body.tags ? JSON.parse(req.body.tags) : [];
+    const highlights = req.body.highlights
+      ? JSON.parse(req.body.highlights)
+      : [];
+    const specifications = req.body.specifications
+      ? JSON.parse(req.body.specifications)
+      : {};
+    const shipping = req.body.shipping ? JSON.parse(req.body.shipping) : {};
+    const variantsArray = variants ? JSON.parse(variants) : []; // PARSE VARIANTS
 
+    // UPLOAD HELPER (move to top)
+    const uploadBuffer = (buffer, folder) =>
+      new Promise((resolve, reject) => {
+        const stream = cloudinary.uploader.upload_stream(
+          { folder },
+          (error, result) => {
+            if (error) return reject(error);
+            resolve(result.secure_url);
+          },
+        );
+        stream.end(buffer);
+      });
+
+    // 1. MAIN THUMBNAIL
+    const thumbnailFile = req.files.find(
+      (file) => file.fieldname === "thumbnail",
+    );
     if (!thumbnailFile) {
       return res.status(400).json({
         success: false,
-        message: "Thumbnail is required",
+        message: "Thumbnail required",
       });
     }
-
-    const generatedSlug = slug || slugify(name, { lower: true, strict: true });
-
-    const existingProduct = await Product.findOne({
-      $or: [{ sku }, { slug: generatedSlug }],
-    });
-
-    if (existingProduct) {
-      return res.status(400).json({
-        success: false,
-        message: "Product with same SKU or slug already exists",
-      });
-    }
-
-    // upload thumbnail
-    const thumbnailUploadResult = await new Promise((resolve, reject) => {
-      cloudinary.uploader
-        .upload_stream({ folder: "thumbnail-product" }, (error, result) => {
-          if (error) return reject(error);
-          resolve(result);
-        })
-        .end(thumbnailFile.buffer);
-    });
-
-    // upload multiple product images
-    const imageUrls = await Promise.all(
-      imageFiles.map(
-        (file) =>
-          new Promise((resolve, reject) => {
-            cloudinary.uploader
-              .upload_stream({ folder: "product-images" }, (error, result) => {
-                if (error) return reject(error);
-                resolve(result.secure_url);
-              })
-              .end(file.buffer);
-          }),
-      ),
+    const thumbnailUrl = await uploadBuffer(
+      thumbnailFile.buffer,
+      "product/thumbnail",
     );
 
-    const product = new Product({
+    // 2. MAIN IMAGES
+    const imageFiles = req.files.filter((file) => file.fieldname === "images");
+    const imageUrls = await Promise.all(
+      imageFiles.map((file) => uploadBuffer(file.buffer, "product/images")),
+    );
+
+    // 3. VARIANTS (now works)
+    const updatedVariants = await Promise.all(
+      variantsArray.map(async (variant, index) => {
+        const variantThumbnailFile = req.files.find(
+          (file) => file.fieldname === `variantThumbnail_${index}`,
+        );
+        const variantImageFiles = req.files.filter(
+          (file) => file.fieldname === `variantImages_${index}`,
+        );
+
+        let variantThumbnail = null;
+        let variantImages = [];
+
+        if (variantThumbnailFile) {
+          variantThumbnail = await uploadBuffer(
+            variantThumbnailFile.buffer,
+            "product/variants/thumbnail",
+          );
+        }
+
+        if (variantImageFiles.length) {
+          variantImages = await Promise.all(
+            variantImageFiles.map((file) =>
+              uploadBuffer(file.buffer, "product/variants/images"),
+            ),
+          );
+        }
+
+        return {
+          ...variant,
+          thumbnail: variantThumbnail,
+          images: variantImages,
+        };
+      }),
+    );
+
+    const newProduct = {
       name,
-      slug: generatedSlug,
+      slug,
       sku,
       brand,
-      tags,
       description,
+      status,
       category,
       subCategory,
       childCategory,
-      mrp: Number(mrp),
-      discount: Number(discount),
-      price: Number(price || 0),
-      finalPrice: Number(finalPrice || 0),
-      tax: Number(tax || 0),
-      stock: Number(stock),
-      highlights,
-      specifications,
-      variants,
-      thumbnail: thumbnailUploadResult.secure_url,
-      images: imageUrls,
-      shipping,
+      mrp,
+      discount,
+      price,
+      finalPrice,
+      tax,
+      stock,
       warranty,
       returnPolicy,
       metaTitle,
       metaDescription,
-    });
+      tags,
+      highlights,
+      specifications,
+      shipping,
+      variants: updatedVariants,
+      thumbnail: thumbnailUrl,
+      images: imageUrls,
+    };
 
-    await product.save();
+    await Product.create(newProduct);
+
+    console.log("Product created:", newProduct);
 
     return res.status(201).json({
       success: true,
-      message: "Product created successfully",
-      product,
+      data: newProduct,
     });
   } catch (error) {
     return res.status(500).json({
