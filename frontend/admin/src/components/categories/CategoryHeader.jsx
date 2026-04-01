@@ -16,8 +16,6 @@ function CategoryHeader({
   inactiveCategoryCount,
   loading,
 }) {
-
-  console.log("activeCategoryCount",activeCategoryCount)
   const [categoryFormModel, setCategoryFormModel] = useState(false);
 
   const dispatch = useDispatch();

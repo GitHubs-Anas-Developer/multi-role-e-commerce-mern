@@ -321,3 +321,38 @@ export const filterStatus = async (req, res) => {
     });
   }
 };
+
+export const fetchChildCategoriesBySubCategory = async (req, res) => {
+  try {
+    const subcategoryId = req.params;
+    if (!subcategoryId) {
+      return res.status(400).json({
+        success: false,
+        message: "subcategory ID is required",
+      });
+    }
+
+    const childCategories = await childCategoryModel
+      .find({
+        parentCategory: subcategoryId,
+      })
+      .select("_id name image");
+
+    if (childCategories.length == 0)
+      return res.status(404).json({
+        success: false,
+        message: "childCategories not found",
+      });
+
+    return res.status(200).json({
+      success: true,
+      childCategories,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: "Internal server error",
+      error: error.message,
+    });
+  }
+};
